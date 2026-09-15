@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBOM Visualizer — IBM Quantum Safe Explorer</title>
+  <link rel="stylesheet" href="cbom-visualizer.css" />
+</head>
+
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="logo">
+      <!-- IBM logo mark (simplified SVG) -->
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="#fff" xmlns="http://www.w3.org/2000/svg" aria-label="IBM">
+        <rect x="0" y="4" width="32" height="3" />
+        <rect x="0" y="9" width="32" height="3" />
+        <rect x="5" y="14" width="22" height="3" />
+        <rect x="5" y="19" width="22" height="3" />
+        <rect x="0" y="24" width="32" height="3" />
+        <rect x="0" y="29" width="32" height="3" />
+      </svg>
+      CBOM Visualizer
+    </div>
+    <div class="divider"></div>
+    <span class="subtitle">IBM Quantum Safe Explorer · CycloneDX 1.6</span>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Upload zone -->
+    <div id="upload-zone" role="button" tabindex="0" aria-label="Upload CBOM JSON file">
+      <div class="upload-icon">
+        <svg width="48" height="48" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z" />
+          <path d="M6 12l1.41 1.41L15 5.83V24h2V5.83l7.59 7.58L26 12 16 2 6 12z" />
+        </svg>
+      </div>
+      <h2>Upload your CBOM file</h2>
+      <p>Drag &amp; drop a CycloneDX CBOM JSON file, or click to browse</p>
+      <input type="file" id="file-input" accept=".json,application/json" />
+      <button class="cds-btn cds-btn-primary" onclick="document.getElementById('file-input').click()">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+          <path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z" />
+          <path d="M6 12l1.41 1.41L15 5.83V24h2V5.83l7.59 7.58L26 12 16 2 6 12z" />
+        </svg>
+        Select file
+      </button>
+    </div>
+
+    <!-- Error notification -->
+    <div id="error-notif" class="notification error hidden">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor">
+        <path
+          d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2zm-1.1 6h2.2v11h-2.2V8zm1.1 17a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+      </svg>
+      <div>
+        <div class="notif-title">Parse error</div>
+        <div class="notif-body" id="error-msg"></div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+
+      <!-- File info bar -->
+      <div class="file-bar">
+        <div>
+          <div class="file-name" id="file-name-display"></div>
+          <div class="file-meta" id="file-meta-display"></div>
+        </div>
+        <div class="actions">
+          <button class="cds-btn cds-btn-secondary" onclick="resetTool()">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor">
+              <path
+                d="M2 16C2 8.3 8.3 2 16 2c4.4 0 8.3 1.8 11.2 4.8l-2.9 2.9C22.1 7.4 19.2 6 16 6 10.5 6 6 10.5 6 16s4.5 10 10 10c4.3 0 8-2.7 9.5-6.5H20v-4h10V26h-4v-2.9C23.5 26.3 20 28 16 28c-6.6 0-12-5.4-12-12z" />
+            </svg>
+            Load another file
+          </button>
+        </div>
+      </div>
+
+      <!-- Vulnerability banner (shown if vulnerabilities exist) -->
+      <div id="vuln-banner" class="hidden notification warning">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor">
+          <path d="M16 2L2 28h28L16 2zm1 11v8h-2v-8h2zm0 10v2h-2v-2h2z" />
+        </svg>
+        <div>
+          <div class="notif-title" id="vuln-banner-title"></div>
+          <div class="notif-body" id="vuln-banner-body"></div>
+        </div>
+      </div>
+
+      <!-- ── Tabs ──────────────────────────────────────────────────────── -->
+      <div class="cds-tabs">
+        <button class="cds-tab active" onclick="switchTab('overview', this)">Overview</button>
+        <button class="cds-tab" onclick="switchTab('crypto', this)">Crypto Assets</button>
+        <button class="cds-tab" onclick="switchTab('libraries', this)">Libraries</button>
+        <button class="cds-tab" onclick="switchTab('dependencies', this)">Dependencies</button>
+        <button class="cds-tab" onclick="switchTab('vulnerabilities', this)">Vulnerabilities</button>
+      </div>
+
+      <!-- ══ Tab: OVERVIEW ═════════════════════════════════════════════ -->
+      <div class="tab-panel active" id="panel-overview">
+
+        <div class="section-title">Summary</div>
+        <div class="kpi-grid" id="kpi-grid"></div>
+
+        <div class="section-title">Cryptographic Profile</div>
+        <div class="charts-row" id="charts-row"></div>
+
+        <div class="section-title">Dependency Tree</div>
+        <div id="dep-tree-container"></div>
+
+        <div class="section-title">Metadata</div>
+        <div class="two-col" id="meta-grid"></div>
+
+      </div>
+
+      <!-- ══ Tab: CRYPTO ASSETS ════════════════════════════════════════ -->
+      <div class="tab-panel" id="panel-crypto">
+        <div class="data-table-wrap">
+          <div class="table-toolbar">
+            <div>
+              <span style="font-size:14px;font-weight:600">Cryptographic Assets</span>
+              <span class="count" id="crypto-count"></span>
+            </div>
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 32 32" fill="var(--cds-icon-secondary)">
+                <path d="M30 28.6l-7.2-7.2A11.9 11.9 0 1020.6 23l7.2 7.2zM6 18a10 10 0 1110 10A10 10 0 016 18z" />
+              </svg>
+              <input type="text" placeholder="Search crypto assets…"
+                oninput="filterTable('crypto-tbody', this.value)" />
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="cds-table">
+              <thead>
+                <tr>
+                  <th onclick="sortTable('crypto-tbody',0,this)">Name <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('crypto-tbody',1,this)">Asset Type <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('crypto-tbody',2,this)">Primitive <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('crypto-tbody',3,this)">Crypto Functions <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('crypto-tbody',4,this)">Used By / Parent Library <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('crypto-tbody',5,this)">Location <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('crypto-tbody',6,this)">Line <span class="sort-arrow">↕</span></th>
+                </tr>
+              </thead>
+              <tbody id="crypto-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="crypto-pag"></div>
+        </div>
+      </div>
+
+      <!-- ══ Tab: LIBRARIES ════════════════════════════════════════════ -->
+      <div class="tab-panel" id="panel-libraries">
+
+        <div class="section-title">Depth Distribution</div>
+        <div class="depth-grid" id="depth-grid"></div>
+
+        <div class="section-title">Library Components with Crypto Findings</div>
+        <div class="data-table-wrap">
+          <div class="table-toolbar">
+            <div>
+              <span style="font-size:14px;font-weight:600">Libraries</span>
+              <span class="count" id="lib-count"></span>
+            </div>
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 32 32" fill="var(--cds-icon-secondary)">
+                <path d="M30 28.6l-7.2-7.2A11.9 11.9 0 1020.6 23l7.2 7.2zM6 18a10 10 0 1110 10A10 10 0 016 18z" />
+              </svg>
+              <input type="text" placeholder="Search libraries…" oninput="filterTable('lib-tbody', this.value)" />
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="cds-table">
+              <thead>
+                <tr>
+                  <th onclick="sortTable('lib-tbody',0,this)">Library <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',1,this)">Group <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',2,this)">Version <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',3,this)">Scope <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',4,this)">Depth <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',5,this)">Type <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',6,this)">Findings <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('lib-tbody',7,this)">Reachability <span class="sort-arrow">↕</span></th>
+                </tr>
+              </thead>
+              <tbody id="lib-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="lib-pag"></div>
+        </div>
+      </div>
+
+      <!-- ══ Tab: DEPENDENCIES ═════════════════════════════════════════ -->
+      <div class="tab-panel" id="panel-dependencies">
+        <div class="section-title">Dependency Graph Entries</div>
+        <div class="data-table-wrap">
+          <div class="table-toolbar">
+            <div>
+              <span style="font-size:14px;font-weight:600">Dependency Adjacency List</span>
+              <span class="count" id="dep-count"></span>
+            </div>
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 32 32" fill="var(--cds-icon-secondary)">
+                <path d="M30 28.6l-7.2-7.2A11.9 11.9 0 1020.6 23l7.2 7.2zM6 18a10 10 0 1110 10A10 10 0 016 18z" />
+              </svg>
+              <input type="text" placeholder="Search by ref…" oninput="filterTable('dep-tbody', this.value)" />
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="cds-table">
+              <thead>
+                <tr>
+                  <th onclick="sortTable('dep-tbody',0,this)">Ref <span class="sort-arrow">↕</span></th>
+                  <th onclick="sortTable('dep-tbody',1,this)">Depends On (count) <span class="sort-arrow">↕</span></th>
+                  <th>Depends On (refs)</th>
+                </tr>
+              </thead>
+              <tbody id="dep-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="dep-pag"></div>
+        </div>
+      </div>
+
+      <!-- ══ Tab: VULNERABILITIES ══════════════════════════════════════ -->
+      <div class="tab-panel" id="panel-vulnerabilities">
+        <div id="vuln-empty" class="hidden notification success">
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor">
+            <path d="M14 21.4l-5-5L10.4 15 14 18.6l7.6-7.6L23 12.4z" />
+            <path
+              d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2zm0 26C9.4 28 4 22.6 4 16S9.4 4 16 4s12 5.4 12 12-5.4 12-12 12z" />
+          </svg>
+          <div>
+            <div class="notif-title">No vulnerabilities found</div>
+            <div class="notif-body">This CBOM does not contain a vulnerabilities section.</div>
+          </div>
+        </div>
+        <div id="vuln-table-wrap" class="data-table-wrap hidden">
+          <div class="table-toolbar">
+            <div>
+              <span style="font-size:14px;font-weight:600">Vulnerabilities</span>
+              <span class="count" id="vuln-count"></span>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="cds-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Severity</th>
+                  <th>Source</th>
+                  <th>CWEs</th>
+                  <th>Affected Components</th>
+                </tr>
+              </thead>
+              <tbody id="vuln-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard -->
+
+    <!-- IBM Carbon for IBM.com — short footer (static) -->
+    <footer class="c4d-footer" role="contentinfo" aria-label="footer">
+      <div class="c4d-footer-inner">
+
+        <!-- IBM 8-bar logo -->
+        <div class="c4d-footer-logo" aria-label="IBM">
+          <a aria-label="IBM logo" class="c4d--footer-logo__link" href="https://www.ibm.com/">
+            <svg focusable="false" preserveAspectRatio="xMidYMid meet"
+              class="c4d--footer-logo__logo" version="1.1" xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-labelledby="footer-logo" width="157"
+              height="65" viewBox="0 0 157 65">
+              <path d="M30.4436498,60.2076728 L30.4436498,64.2376746 L-2.91322522e-13,64.2376746 L-2.91322522e-13,60.2076728 L30.4436498,60.2076728 Z M108.735358,60.2067171 L108.735358,64.2376746 L86.9826603,64.2376746 L86.9826603,60.2067171 L108.735358,60.2067171 Z M156.592795,60.2067171 L156.592795,64.2376746 L134.840096,64.2376746 L134.840096,60.2067171 L156.592795,60.2067171 Z M123.176704,60.2067171 L121.779475,64.2376746 L120.398188,60.2067171 L123.176704,60.2067171 Z M34.7933454,60.2078639 L77.5682441,60.2078639 C74.7705526,62.6327259 71.1773563,64.1319583 67.2410591,64.2324704 L66.8180207,64.2378657 L34.7933454,64.2378657 L34.7933454,60.2078639 L77.5682441,60.2078639 Z M30.4436498,51.7462936 L30.4436498,55.7762954 L-2.91322522e-13,55.7762954 L-2.91322522e-13,51.7462936 L30.4436498,51.7462936 Z M82.8448933,51.7469625 C82.5134031,52.9954078 82.0440654,54.1860508 81.4563549,55.3022459 L81.1972884,55.7760087 L34.7933454,55.7760087 L34.7933454,51.7469625 L82.8448933,51.7469625 Z M156.592795,51.742471 L156.592795,55.7734284 L134.840096,55.7734284 L134.840096,51.742471 L156.592795,51.742471 Z M108.735358,51.742471 L108.735358,55.7734284 L86.9826603,55.7734284 L86.9826603,51.742471 L108.735358,51.742471 Z M126.109666,51.7420887 L124.712437,55.7730462 L118.86283,55.7730462 L117.466539,51.7420887 L126.109666,51.7420887 Z M21.7451962,43.2849144 L21.7451962,47.3149162 L8.69751584,47.3149162 L8.69751584,43.2849144 L21.7451962,43.2849144 Z M82.940355,43.2851055 C83.2119472,44.4164829 83.378718,45.588834 83.4161671,46.7957568 L83.4242276,47.3151073 L68.7955217,47.3151073 L68.7955217,43.2851055 L82.940355,43.2851055 Z M56.5390105,43.2849144 L56.5390105,47.3149162 L43.4913301,47.3149162 L43.4913301,43.2849144 L56.5390105,43.2849144 Z M129.041034,43.2784159 L127.644742,47.3084177 L115.930525,47.3084177 L114.534234,43.2784159 L129.041034,43.2784159 Z M147.891528,43.2782248 L147.891528,47.3082266 L134.840096,47.3082266 L134.840096,43.2782248 L147.891528,43.2782248 Z M108.735358,43.2782248 L108.735358,47.3082266 L95.6839271,47.3082266 L95.6839271,43.2782248 L108.735358,43.2782248 Z M21.7451962,34.8235352 L21.7451962,38.853537 L8.69751584,38.853537 L8.69751584,34.8235352 L21.7451962,34.8235352 Z M77.8615684,34.8232485 C78.9907919,35.873419 79.9779764,37.0776317 80.7882576,38.4059297 L81.0517515,38.8532503 L43.4916115,38.8532503 L43.4916115,34.8232485 L77.8615684,34.8232485 Z M108.735358,34.8139786 L108.735358,38.8449361 L95.6839271,38.8449361 L95.6839271,34.8139786 L108.735358,34.8139786 Z M147.891528,34.8139786 L147.891528,38.8449361 L134.840096,38.8449361 L134.840096,34.8139786 L147.891528,34.8139786 Z M131.973433,34.8136919 L130.577142,38.8446494 L112.998313,38.8446494 L111.602022,34.8136919 L131.973433,34.8136919 Z M81.1948503,26.3623471 C80.4234674,27.7178498 79.472067,28.9518216 78.3755133,30.0356991 L78.0046671,30.3913933 L43.4912364,30.3913933 L43.4912364,26.3623471 L81.1948503,26.3623471 Z M21.7451962,26.362156 L21.7451962,30.3912022 L8.69751584,30.3912022 L8.69751584,26.362156 L21.7451962,26.362156 Z M147.891528,26.3490635 L147.891528,30.380021 L134.840096,30.380021 L134.839345,26.5412738 L133.509447,30.380021 L122.054045,30.380021 L123.426893,26.3490635 L147.891528,26.3490635 Z M120.148562,26.3492547 L121.52141,30.3802121 L110.06507,30.3802121 L108.735358,26.5413415 L108.735358,30.3802121 L95.6839271,30.3802121 L95.6839271,26.3492547 L120.148562,26.3492547 Z M21.7451962,17.9007768 L21.7451962,21.9307786 L8.69751584,21.9307786 L8.69751584,17.9007768 L21.7451962,17.9007768 Z M83.4242276,17.900299 C83.4242276,19.1161325 83.2914058,20.2997723 83.0502626,21.4428957 L82.940355,21.9303008 L68.7955217,21.9303008 L68.7955217,17.900299 L83.4242276,17.900299 Z M56.5390105,17.8998212 L56.5390105,21.929823 L43.4913301,21.929823 L43.4913301,17.8998212 L56.5390105,17.8998212 Z M147.891434,17.8846262 L147.891434,21.9155837 L124.936556,21.9155837 L126.307529,17.8846262 L147.891434,17.8846262 Z M117.266988,17.8844351 L118.638898,21.9153926 L95.6840208,21.9153926 L95.6840208,17.8844351 L117.266988,17.8844351 Z M30.4436498,9.43844199 L30.4436498,13.4684438 L-2.91322522e-13,13.4684438 L-2.91322522e-13,9.43844199 L30.4436498,9.43844199 Z M81.197476,9.43844199 C81.8186099,10.5338628 82.324153,11.7053777 82.6946307,12.9369814 L82.8450809,13.4684438 L34.793533,13.4684438 L34.793533,9.43844199 L81.197476,9.43844199 Z M156.593451,9.41971113 L156.593451,13.4506686 L127.817099,13.4506686 L129.189946,9.41971113 L156.593451,9.41971113 Z M114.385696,9.41999783 L115.757606,13.4509553 L86.9821914,13.4509553 L86.9821914,9.41999783 L114.385696,9.41999783 Z M30.4436498,0.978018462 L30.4436498,5.00706462 L-2.91322522e-13,5.00706462 L-2.91322522e-13,0.978018462 L30.4436498,0.978018462 Z M66.818302,0.977540633 C70.7785294,0.977540633 74.4118131,2.3931571 77.2657493,4.75043913 L77.5685254,5.00658679 L34.7936268,5.00658679 L34.7936268,0.977540633 L66.818302,0.977540633 Z M156.592607,0.956229502 L156.592607,4.98718697 L130.69886,4.98718697 L132.07077,0.956229502 L156.592607,0.956229502 Z M111.495495,0.955273846 L112.867405,4.98527566 L86.9820976,4.98527566 L86.9820976,0.955273846 L111.495495,0.955273846 Z" />
+            </svg>
+            <slot></slot>
+          </a>
+        </div>
+
+        <!-- Legal nav -->
+        <ul class="c4d-legal-nav" role="list">
+          <li role="listitem">
+            <a href="https://www.ibm.com/contact?lnk=flg-cont-usen" target="_blank" rel="noopener">Contact IBM</a>
+          </li>
+          <li role="listitem">
+            <a href="https://www.ibm.com/us-en/privacy" target="_blank" rel="noopener">Privacy</a>
+          </li>
+          <li role="listitem">
+            <a href="https://www.ibm.com/legal?lnk=flg-tous-usen" target="_blank" rel="noopener">Terms of use</a>
+          </li>
+          <li role="listitem">
+            <a href="https://www.ibm.com/able/?lnk=flg-acce-usen" target="_blank" rel="noopener">Accessibility</a>
+          </li>
+        </ul>
+
+        <!-- Made with IBM Bob -->
+        <div class="c4d-footer-bob">Made with IBM Bob</div>
+
+      </div>
+    </footer>
+  </main>
+
+  <script src="cbom-visualizer.js"></script>
+</body>
+
+</html>

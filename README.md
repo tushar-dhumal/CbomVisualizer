@@ -1,6 +1,6 @@
-# CBOM Visualizer — IBM Quantum Safe Explorer
+# CBOM Visualizer
 
-A zero-dependency, browser-only tool for visualising **Cryptography Bill of Materials (CBOM)** files produced by IBM Quantum Safe Explorer (QSE). Drop a CycloneDX 1.4–1.6 CBOM JSON file onto the page and instantly explore its cryptographic assets, library dependencies, and vulnerabilities through a set of interactive tabs and charts.
+A zero-dependency, browser-only tool for visualising **Cryptography Bill of Materials (CBOM)** files. Drop any CycloneDX 1.4–1.6 CBOM JSON file onto the page and instantly explore its cryptographic assets, library dependencies, and vulnerabilities through a set of interactive tabs and charts.
 
 ---
 
@@ -46,50 +46,17 @@ CbomVisualizer/
 
 ## CBOM Format Support
 
-The visualiser understands **CycloneDX 1.4, 1.5, and 1.6** CBOM JSON files, including IBM QSE-specific `qse:dep.*` property extensions:
+The visualiser understands **CycloneDX 1.4, 1.5, and 1.6** CBOM JSON files. All core CycloneDX fields are supported out of the box:
 
-| Property | Used for |
+| Field | Used for |
 |---|---|
-| `qse:dep.depth` | Dependency tree depth and depth-distribution grid |
-| `qse:dep.transitive` | Direct vs transitive badge in the library table and tree |
-| `qse:dep.findingCount` | Crypto-finding count shown in the library table and bar chart |
-| `qse:dep.reachabilityStatus` | Reachability tag in the library table |
+| `components` | Cryptographic assets and library components |
+| `dependencies` | Dependency graph and expandable tree |
+| `vulnerabilities` | Vulnerability table and banner |
+| `metadata` | File info bar and metadata panel |
+| `cryptoProperties` | Asset type, primitive, and crypto functions |
+| `evidence.occurrences` | Source file location and line number |
 
-Standard CycloneDX fields used: `components`, `dependencies`, `vulnerabilities`, `metadata`, `cryptoProperties`, `evidence.occurrences`.
-
----
-
-## File Structure
-
-### `cbom-visualizer.html`
-Pure HTML structure. Contains only the page skeleton, tab panels, table scaffolding, and the IBM footer. Links the CSS and JS as external files. No inline styles or scripts.
-
-### `cbom-visualizer.css`
-All visual styling, organised into sections:
-
-- **CSS custom properties** — IBM Carbon White theme tokens and spacing scale
-- **Reset & base** — box-sizing reset, body font
-- **Layout** — header, main container, upload zone, file-info bar
-- **Components** — buttons, notifications, KPI cards, charts, tables, pagination, tags, tabs
-- **Dependency tree** — tree node, indent rails, toggle chevron, badges
-- **Footer** — IBM Carbon for IBM.com footer styles
-- **Utilities** — `.hidden`, `.flex-gap`, `.two-col`, `.table-scroll`
-
-### `cbom-visualizer.js`
-All application logic, organised into sections:
-
-- **Upload wiring** — drag-and-drop, file-input change, `FileReader` JSON parse
-- **`renderDashboard()`** — top-level orchestrator called after a file is loaded
-- **`renderDepTree()`** — builds the lazy expandable dependency tree DOM
-- **`buildTreeNode()`** — recursive (lazy) tree-node builder with cycle and dedup guards
-- **`treeToggle()` / `treeExpandAll()` / `treeCollapseAll()` / `treeSearch()`** — tree interaction helpers
-- **`renderCharts()`** / **`buildDonutCard()`** — SVG donut and bar-chart rendering
-- **`renderMeta()`** — metadata key-value table
-- **`renderCryptoTable()`** / **`renderLibraryTable()`** / **`renderDepTable()`** / **`renderVulnTable()`** — per-tab table builders
-- **Pagination** — `buildPaginatedTable()`, `renderPage()`, `goPage()`
-- **`filterTable()`** / **`sortTable()`** — client-side search and sort
-
----
 
 ## Browser Compatibility
 
